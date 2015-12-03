@@ -7,6 +7,7 @@
 
 #include<stdio.h>
 #include<stdlib.h>
+#include <malloc.c>
 #define MAXVEX  20
 typedef struct Stack
 {
