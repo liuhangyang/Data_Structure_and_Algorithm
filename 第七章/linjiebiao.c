@@ -179,6 +179,7 @@ AdjList *Created_Graph(AdjList *G)
             }
             if(G->vertex[i].vexdata == vex2){
                 n2=i;
+
             }
         }
         printf("请输入权值:");
@@ -188,10 +189,10 @@ AdjList *Created_Graph(AdjList *G)
         s->weight=weight;
         Insert(&G->vertex[n1],s);
         /*如果是有向图，则下面的语句去掉就行*/
-       s=(ArcNode *)malloc(sizeof(ArcNode));
+       /*s=(ArcNode *)malloc(sizeof(ArcNode));
         s->adjvex = n1;
         s->weight=weight;
-       Insert(&G->vertex[n2],s);
+       Insert(&G->vertex[n2],s);*/
     }
     return G;
 }
@@ -281,13 +282,14 @@ void  print(AdjList *G)
     ArcNode *p;
     int i;
     for(i=1;i<=G->vexnum;i++){
-        printf(" %c:",G->vertex[i].vexdata);
+        printf(" %c: ",G->vertex[i].vexdata);
         p=G->vertex[i].head->next;
         while(p)
         {
-            printf("%d ",p->adjvex);
+            printf("%d %d->",p->adjvex,p->weight);
             p=p->next;
         }
+        printf("NULL");
 
         printf("\n");
     }
@@ -407,12 +409,14 @@ void  Kruskal(AdjList *G)
         }
     }
     sort(myedge,G->arcnum);
+    printedge(myedge,G->vexnum);
     for(i=1;i<=G->vexnum;i++)
     {
         p1=getPosition(G,myedge[i].start);
         p2=getPosition(G,myedge[i].end);
         int m1=getEnd(vex,p1);
         int m2=getEnd(vex,p2);
+        printf("m1=%d,m2=%d\n",m1,m2);
         if(m1!=m2){
             vex[m1]=m2;
             mintree[index++]=myedge[i];
@@ -436,6 +440,9 @@ void FindID(AdjList *G,int indegree[MAXVEX])
             indegree[p->adjvex]++;
             p=p->next;
         }
+    }
+    for(i=1;i<=G->vexnum;i++){
+            printf("%c:%d\n",G->vertex[i].vexdata,indegree[i]);
     }
 }
 int TopoSort(AdjList *G)
@@ -468,16 +475,68 @@ int TopoSort(AdjList *G)
     }
     if(count < G->vexnum){
         return 0;
-    }
+}
     return 1;
+}
+void Dijkstra(AdjList *G,int start,int disk[],int path[][MAXVEX])
+{
+    int i,j,mindist,k,t;
+    ArcNode *p;
+    for(i=1;i<=G->vexnum;i++){    //初始化最短路径数组disk,和标记此顶点是否已经找到最短路径的path[i][0],等于0表示没有找到,等于1表示找到.
+        disk[i]=INFINE;
+        path[i][0]=0;
+    }
+    p=G->vertex[start].head->next;
+    while(p){                                  //保存源点到和此源点相关的顶点的路径.
+        disk[p->adjvex]=p->weight;
+        path[p->adjvex][1]=start;
+        path[p->adjvex][2]=p->adjvex;
+         p=p->next;
+    }
+    path[start][0]=1;               //源点标记为为1，其最短路径为0.此顶点以后不会再用到
+    for(i=2;i<=G->vexnum;i++){                //选择最最短的路径
+         mindist=INFINE;
+        for(j=1;j<=G->vexnum;j++){
+            if(!path[j][0] && disk[j] < mindist){
+                k=j;                                         
+                mindist=disk[j];
+            }
+        }
+        if(mindist == INFINE){         //如果没有找到最短的路径，则说明从此源点不能到任何其他顶点，直接返回.
+            return;
+        }
+        path[k][0]=1;                  //标记找到最小路径的顶点，此顶点以后不会再用到.
+        p=G->vertex[k].head->next;
+        while(p){
+            if(!path[p->adjvex][0]&& disk[p->adjvex] > disk[k]+ p->weight){     //更新disk，使其从保持从源点到和此顶点相关的顶点的路径最短.           
+                //printf("p->ad:%d ",p->adjvex);
+                disk[p->adjvex]=disk[k]+p->weight;
+                t=1;
+                while(path[k][t]!=0)      //记录最新的路径
+                {
+                    path[p->adjvex][t]=path[k][t];
+                    t++;
+                }
+                path[p->adjvex][t]=p->adjvex;
+                path[p->adjvex][t+1]=0;                       //path[i][t+1]之前的都是最短路径所要经过的顶点，从t+1这里停止,作为最后输出路径的判断条件
+            }
+            p=p->next;
+        }
+    }
 }
 int main(int argc,char *argv[])
 {
     Edge myedge;
     AdjList *G;
     G=Created_Graph(G);
+    char start1,end;
+    int ps,pe,i;
+    printf("请输入起点和终点:");
+    scanf(" %c%c",&start1,&end);
+    int disk[MAXVEX],path[MAXVEX][MAXVEX];
+    printf("\n");
     print(G);
-  printf("**************dfs递归遍历*****************************\n");
+    printf("**************dfs递归遍历*****************************\n");
     dfs(G,1);
     printf("\n");
     printf("*************dfs递归遍历多个连通分量********************\n");
@@ -497,5 +556,23 @@ int main(int argc,char *argv[])
    /* printf("*********************拓扑排序*****************************\n");
     TopoSort(G);
     printf("\n");*/
+   // Dijkstra(G,7,disk,path);
+     ps=getPosition(G,start1);
+     pe=getPosition(G,end);
+     //printf("%d %d\n",ps,pe);
+     Dijkstra(G,ps,disk,path);
+    if(disk[pe]!=INFINE){
+         printf("从%c到%c的路径为:\n",start1,end);
+        for(i=1;i<=G->vexnum;i++){
+            if(path[pe][i]==0){
+                break;
+            }
+             printf("%c ",G->vertex[path[pe][i]].vexdata);
+        }
+        printf("\n");
+        printf("最小路径总和为:%d\n",disk[pe]);
+    }else{
+        printf("没有从%c到%c的最小路径!\n",start1,end);
+    }
     return 0;
 }
