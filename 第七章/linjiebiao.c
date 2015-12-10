@@ -491,6 +491,7 @@ void Dijkstra(AdjList *G,int start,int disk[],int path[][MAXVEX])
         disk[p->adjvex]=p->weight;
         path[p->adjvex][1]=start;
         path[p->adjvex][2]=p->adjvex;
+        path[p->adjvex][3]=0;
          p=p->next;
     }
     path[start][0]=1;               //源点标记为为1，其最短路径为0.此顶点以后不会再用到
